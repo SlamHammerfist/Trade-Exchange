@@ -23,8 +23,8 @@ export function partnersFor(actor) {
   for (const other of game.actors) {
     if (other === actor || !canTrade(other)) continue;
     if (other.isOwner) {
-      // A GM owns everything; keep their list to player characters and player-owned actors.
-      if (game.user.isGM && !(other.type === "character" || other.hasPlayerOwner)) continue;
+      // A GM owns everything; keep their list to actors that belong to players.
+      if (game.user.isGM && !(other.hasPlayerOwner || game.users.some(u => u.character === other))) continue;
       mine.push({ uuid: other.uuid, name: other.name });
       continue;
     }

@@ -1,4 +1,5 @@
-import { COMMIT_TIMEOUT, denominations } from "./constants.mjs";
+import { COMMIT_TIMEOUT } from "./constants.mjs";
+import { adapter } from "./systems/index.mjs";
 import * as socket from "./socket.mjs";
 
 /**
@@ -46,7 +47,7 @@ export class Trade {
   #commitTimer;
 
   static emptyOffer() {
-    return { items: {}, currency: Object.fromEntries(denominations().map(d => [d, 0])) };
+    return { items: {}, currency: Object.fromEntries(adapter().currencies.map(c => [c.key, 0])) };
   }
 
   /* -------------------------------------------- */
@@ -106,7 +107,7 @@ export class Trade {
   setItem(index, item, qty) {
     if (!this.canEdit(index)) return false;
     const offer = this.sides[index].offer;
-    const held = item.system.quantity ?? 1;
+    const held = adapter().getQuantity(item);
     qty = Math.clamp(Math.floor(Number(qty) || 0), 0, held);
     const current = offer.items[item.id]?.qty ?? 0;
     if (qty === current) return false;
@@ -138,13 +139,14 @@ export class Trade {
     let changed = false;
     for (const [id, info] of Object.entries(offer.items)) {
       const item = actor.items.get(id);
-      const held = item?.system.quantity ?? 0;
+      const held = item ? adapter().getQuantity(item) : 0;
       if (!item || held <= 0) { delete offer.items[id]; changed = true; continue; }
       const fresh = itemInfo(item, Math.min(info.qty, held));
       if (!foundry.utils.objectsEqual(fresh, info)) { offer.items[id] = fresh; changed = true; }
     }
+    const coins = adapter().getCurrency(actor);
     for (const d of Object.keys(offer.currency)) {
-      const held = actor.system.currency?.[d] ?? 0;
+      const held = coins[d] ?? 0;
       if (offer.currency[d] > held) { offer.currency[d] = held; changed = true; }
     }
     if (changed) this.#changed(index);
@@ -261,19 +263,17 @@ export class Trade {
 
 /** Display data for an offered item. */
 export function itemInfo(item, qty) {
-  const sys = item.system;
-  const weight = typeof sys.weight === "object" ? sys.weight?.value : sys.weight;
+  const sys = adapter();
   const info = {
     qty,
     name: item.name,
     img: item.img,
     type: item.type,
-    price: { value: Number(sys.price?.value) || 0, denomination: sys.price?.denomination ?? "gp" },
-    weight: Number(weight) || 0
+    value: sys.itemValue(item),
+    weight: sys.itemWeight(item)
   };
-  if (item.type === "container") {
-    const contents = item.actor?.items.filter(i => isInside(i, item)) ?? [];
-    info.contents = contents.length;
+  if (sys.isContainer(item)) {
+    info.contents = item.actor?.items.filter(i => isInside(i, item)).length ?? 0;
   }
   return info;
 }
@@ -281,22 +281,24 @@ export function itemInfo(item, qty) {
 /** Whether `item` sits somewhere inside `container` (any depth). */
 export function isInside(item, container) {
   const items = item.actor?.items;
-  let parentId = item.system.container;
+  const sys = adapter();
+  let parentId = sys.containerId(item);
   const seen = new Set();
   while (parentId && !seen.has(parentId)) {
     if (parentId === container.id) return true;
     seen.add(parentId);
-    parentId = items?.get(parentId)?.system.container;
+    const parent = items?.get(parentId);
+    parentId = parent ? sys.containerId(parent) : null;
   }
   return false;
 }
 
-/** Physical, tradeable item. */
+/** Item that can change hands. */
 export function isTradeable(item) {
-  return item && ("quantity" in item.system);
+  return !!item && adapter().isTradeable(item);
 }
 
-/** Actor that can hold coins and items. */
+/** Actor that can take part in a trade. */
 export function canTrade(actor) {
-  return !!actor && (actor.system?.currency !== undefined) && !!actor.items;
+  return !!actor && adapter().canTrade(actor);
 }

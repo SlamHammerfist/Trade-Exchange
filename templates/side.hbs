@@ -9,10 +9,12 @@
     <span class="tx-side-role">{{#if editable}}{{localize "TRADEX.YourOffer"}}{{else}}{{localize "TRADEX.TheirOffer"}}{{/if}}</span>
   </header>
 
+  {{#if hasCoins}}
   <div class="tx-coins">
     {{#each coins}}
     <label class="tx-coin {{#if offered}}offered{{/if}}" data-tooltip="{{label}}">
-      <img class="tx-coin-icon" src="{{icon}}" alt="{{label}}">
+      {{#if icon}}<img class="tx-coin-icon" src="{{icon}}" alt="{{label}}">
+      {{else}}<span class="tx-coin-abbr">{{abbr}}</span>{{/if}}
       {{#if ../editable}}
       <input type="number" class="tx-coin-input" data-denom="{{key}}" min="0" max="{{held}}" step="1" value="{{offered}}">
       <span class="tx-held">/ {{held}}</span>
@@ -22,6 +24,7 @@
     </label>
     {{/each}}
   </div>
+  {{/if}}
 
   {{#if editable}}
   <input type="search" class="tx-filter" placeholder="{{localize "TRADEX.Filter"}}" value="{{filter}}" autocomplete="off">

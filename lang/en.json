@@ -11,8 +11,13 @@
     "NothingOffered": "Nothing offered yet.",
     "WithContainer": "Goes with {container}",
     "Contains": "Contains {n} item(s)",
-    "Summary": "{count} item(s) · ≈ {value} gp · {weight} {unit}",
+    "Summary": {
+      "Items": "{count} item(s)",
+      "Value": "≈ {value} {unit}",
+      "Weight": "{weight} {unit}"
+    },
     "UnknownActor": "Unknown",
+    "CompanionMissing": "Trade Exchange: install and enable {title} for full {system} support. Until then trades use the generic settings.",
     "Cancel": "Cancel",
     "Accept": "Accept Trade",
     "Withdraw": "Withdraw Acceptance",
@@ -67,9 +72,13 @@
       "PartnerOffline": "No player who controls {name} is online."
     },
     "Settings": {
-      "HideElectrum": {
-        "Name": "Hide electrum",
-        "Hint": "Leave electrum (ep) out of trades."
+      "GenericQuantity": {
+        "Name": "Item quantity field",
+        "Hint": "Path to an item's quantity in this game system. Only items with a number there can be traded. Example: system.quantity"
+      },
+      "GenericCurrency": {
+        "Name": "Currency fields",
+        "Hint": "Comma-separated list of name=path for each kind of coin an actor holds, in this game system. Leave empty to trade items only. Example: gp=system.currency.gp, sp=system.currency.sp"
       },
       "Receipt": {
         "Name": "Trade receipt in chat",
@@ -80,7 +89,7 @@
       },
       "SheetButton": {
         "Name": "Trade button on actor sheets",
-        "Hint": "Show a handshake button beside the coins on the inventory tab."
+        "Hint": "Show a Trade button on actor sheets: where the system's adapter puts it (beside the coins in D&D 5e), otherwise in the sheet's header menu."
       }
     }
   }

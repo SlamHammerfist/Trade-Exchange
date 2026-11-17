@@ -1,4 +1,5 @@
-import { MODULE_ID, TEMPLATES, TYPE_ORDER, denominations } from "./constants.mjs";
+import { MODULE_ID, TEMPLATES } from "./constants.mjs";
+import { adapter } from "./systems/index.mjs";
 import { isInside, isTradeable } from "./trade.mjs";
 import { executeTrade } from "./transfer.mjs";
 
@@ -83,16 +84,15 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const offer = side.offer;
     const user = game.users.get(side.userId);
 
-    const coins = denominations().map(key => {
-      const cfg = CONFIG.DND5E.currencies[key];
-      return {
-        key,
-        label: game.i18n.localize(cfg.label),
-        icon: cfg.icon,
-        held: Number(actor?.system.currency?.[key]) || 0,
-        offered: offer.currency[key] ?? 0
-      };
-    });
+    const held = actor ? adapter().getCurrency(actor) : {};
+    const coins = adapter().currencies.map(c => ({
+      key: c.key,
+      label: c.label,
+      abbr: c.abbr,
+      icon: c.icon,
+      held: held[c.key] ?? 0,
+      offered: offer.currency[c.key] ?? 0
+    }));
 
     const groups = editable && actor
       ? this.#inventoryGroups(actor, offer)
@@ -103,8 +103,10 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
       editable,
       name: actor?.name ?? game.i18n.localize("TRADEX.UnknownActor"),
       img: actor?.img ?? "icons/svg/mystery-man.svg",
-      userName: user?.name ?? "",
+      // In a local trade one user controls both sides, so their name says nothing.
+      userName: trade.local ? "" : (user?.name ?? ""),
       coins,
+      hasCoins: coins.length > 0,
       groups,
       hasItems: groups.length > 0,
       total: offerSummary(offer),
@@ -114,13 +116,15 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** Whole inventory, grouped by type, containers followed by their contents. */
   #inventoryGroups(actor, offer) {
-    const items = actor.items.filter(isTradeable);
+    const sys = adapter();
+    // Nothing to hand over when there are none left (containers always show, for their contents).
+    const items = actor.items.filter(i => isTradeable(i) && ((sys.getQuantity(i) > 0) || sys.isContainer(i)));
     const ids = new Set(items.map(i => i.id));
-    const offeredContainers = items.filter(i => i.type === "container" && offer.items[i.id]);
+    const offeredContainers = items.filter(i => sys.isContainer(i) && offer.items[i.id]);
     const children = new Map();
     const top = [];
     for (const item of items) {
-      const parent = item.system.container;
+      const parent = sys.containerId(item);
       if (parent && ids.has(parent)) {
         if (!children.has(parent)) children.set(parent, []);
         children.get(parent).push(item);
@@ -137,13 +141,13 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
         name: item.name,
         search: item.name.toLowerCase(),
         img: item.img,
-        held: item.system.quantity ?? 1,
+        held: sys.getQuantity(item),
         qty,
         offered: qty > 0 && !enclosed,
         locked: !!enclosed,
         note: enclosed
           ? game.i18n.format("TRADEX.WithContainer", { container: enclosed.name })
-          : (item.type === "container" && kids.length ? game.i18n.format("TRADEX.Contains", { n: actor.items.filter(i => isInside(i, item)).length }) : ""),
+          : (sys.isContainer(item) && kids.length ? game.i18n.format("TRADEX.Contains", { n: actor.items.filter(i => isInside(i, item)).length }) : ""),
         depth
       });
       for (const kid of kids) row(kid, depth + 1, out);
@@ -154,7 +158,7 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
       if (!byType.has(item.type)) byType.set(item.type, []);
       row(item, 0, byType.get(item.type));
     }
-    return orderGroups([...byType].map(([type, rows]) => ({ type, label: typeLabel(type), items: rows })));
+    return orderGroups([...byType].map(([type, rows]) => ({ type, label: adapter().typeLabel(type), items: rows })));
   }
 
   /** Read-only: what the other side offers, from the display data they sent. */
@@ -173,7 +177,7 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
       });
     }
     for (const rows of byType.values()) rows.sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
-    return orderGroups([...byType].map(([type, rows]) => ({ type, label: typeLabel(type), items: rows })));
+    return orderGroups([...byType].map(([type, rows]) => ({ type, label: adapter().typeLabel(type), items: rows })));
   }
 
   #footerContext() {
@@ -280,7 +284,7 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     // Offering or withdrawing a container locks/unlocks its contents: redraw the panel.
     const toggled = wasOffered !== !!this.trade.sides[index].offer.items[itemId];
-    if (item.type === "container" && toggled) this.refresh([index]);
+    if (adapter().isContainer(item) && toggled) this.refresh([index]);
     else {
       this.#syncRow(index, itemId);
       this.#syncTotal(index);
@@ -313,7 +317,8 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     else if (el.matches(".tx-coin-input")) {
       const denom = el.dataset.denom;
-      const held = Number(this.trade.actor(index)?.system.currency?.[denom]) || 0;
+      const actor = this.trade.actor(index);
+      const held = actor ? (adapter().getCurrency(actor)[denom] ?? 0) : 0;
       this.trade.setCoin(index, denom, el.value, held);
       el.value = this.trade.sides[index].offer.currency[denom] ?? 0;
       el.closest(".tx-coin")?.classList.toggle("offered", Number(el.value) > 0);
@@ -360,7 +365,7 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!item) return;
     const current = this.trade.sides[index].offer.items[itemId]?.qty ?? 0;
     const delta = Number(target.dataset.delta);
-    const held = item.system.quantity ?? 1;
+    const held = adapter().getQuantity(item);
     const next = event.shiftKey ? (delta > 0 ? held : 0) : current + delta;
     this.#setItem(index, itemId, next);
   }
@@ -404,34 +409,32 @@ export class TradeApp extends HandlebarsApplicationMixin(ApplicationV2) {
 /*  Helpers                                     */
 /* -------------------------------------------- */
 
-function typeLabel(type) {
-  const plural = `TYPES.Item.${type}Pl`;
-  if (game.i18n.has(plural)) return game.i18n.localize(plural);
-  return game.i18n.localize(CONFIG.Item.typeLabels?.[type] ?? type);
-}
-
 function orderGroups(groups) {
+  const order = adapter().typeOrder;
   const rank = t => {
-    const i = TYPE_ORDER.indexOf(t);
-    return i === -1 ? TYPE_ORDER.length : i;
+    const i = order.indexOf(t);
+    return i === -1 ? order.length : i;
   };
   return groups.sort((a, b) => (rank(a.type) - rank(b.type)) || a.label.localeCompare(b.label, game.i18n.lang));
 }
 
-/** "3 items · ≈ 12.5 gp · 14 lb" for an offer. */
+/** "3 items · ≈ 12.5 gp · 14 lb": value and weight only where the system knows them. */
 export function offerSummary(offer) {
+  const sys = adapter();
   const entries = Object.values(offer.items);
-  const count = entries.reduce((n, i) => n + i.qty, 0);
-  const rates = CONFIG.DND5E.currencies;
-  const gp = entries.reduce((sum, i) => {
-    const rate = rates[i.price?.denomination]?.conversion || 1;
-    return sum + ((i.price?.value || 0) * i.qty) / rate;
-  }, 0) + Object.entries(offer.currency).reduce((sum, [d, v]) => sum + (v || 0) / (rates[d]?.conversion || 1), 0);
-  const weight = entries.reduce((sum, i) => sum + (i.weight || 0) * i.qty, 0);
-  let unit = "lb";
-  try { if (game.settings.get("dnd5e", "metricWeightUnits")) unit = "kg"; } catch {}
-  const round = n => Math.round(n * 100) / 100;
-  return game.i18n.format("TRADEX.Summary", {
-    count, value: round(gp).toLocaleString(game.i18n.lang), weight: round(weight).toLocaleString(game.i18n.lang), unit
-  });
+  const lang = game.i18n.lang;
+  const round = n => (Math.round(n * 100) / 100).toLocaleString(lang);
+  const parts = [game.i18n.format("TRADEX.Summary.Items", { count: entries.reduce((n, i) => n + i.qty, 0) })];
+
+  if (sys.valueUnit) {
+    const rates = Object.fromEntries(sys.currencies.map(c => [c.key, c.rate]));
+    const value = entries.reduce((sum, i) => sum + (Number(i.value) || 0) * i.qty, 0)
+      + Object.entries(offer.currency).reduce((sum, [k, v]) => sum + (v || 0) * (rates[k] ?? 0), 0);
+    parts.push(game.i18n.format("TRADEX.Summary.Value", { value: round(value), unit: sys.valueUnit }));
+  }
+  if (sys.weightUnit) {
+    const weight = entries.reduce((sum, i) => sum + (Number(i.weight) || 0) * i.qty, 0);
+    parts.push(game.i18n.format("TRADEX.Summary.Weight", { weight: round(weight), unit: sys.weightUnit }));
+  }
+  return parts.join(" · ");
 }

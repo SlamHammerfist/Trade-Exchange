@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.0.0 (2026-11-17)
+### Changed
+- **D&D 5e support moved to its own module, [Trade Exchange for D&D 5e](https://github.com/SlamHammerfist/Trade-Exchange-DnD5e).** D&D 5e worlds need both modules; the GM is told if the companion is missing. The D&D 5e *Hide electrum* setting moved with it.
+- Works in any game system. Everything system-specific goes through a system adapter, which companion modules provide.
+- The offer summary shows value and weight only when the system provides them.
+
+### Added
+- Generic adapter for systems without a companion module: set the item quantity field and the actor's currency fields in the module settings. Coins are optional.
+- In systems without an adapter, the Trade button is in the actor sheet's header menu.
+- Companion modules register an adapter with `api.registerSystem` during the `tradeExchange.ready` hook.
+
+### Fixed
+- In a trade where you control both actors, the panels no longer show your user name under the other actor.
+- Items with a quantity of 0 are no longer listed.
+
 ## 2.0.0 (2026-11-17)
 Rebuilt from scratch.
 

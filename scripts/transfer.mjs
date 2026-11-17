@@ -1,5 +1,6 @@
-import { MODULE_ID, STACKABLE_TYPES, TEMPLATES } from "./constants.mjs";
+import { MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { canTrade, isInside, isTradeable } from "./trade.mjs";
+import { adapter } from "./systems/index.mjs";
 
 /**
  * Carry out a trade. Runs on a client that owns both actors: the active GM for
@@ -18,6 +19,7 @@ export async function executeTrade(sides, { checkOwners = false } = {}) {
   const plan = await prepare(sides, { checkOwners });
   if (plan.error) return { ok: false, error: plan.error };
 
+  const sys = adapter();
   const [a, b] = plan.sides;
   try {
     // 1. Receive. Never stack onto an item the receiver is itself giving away.
@@ -28,13 +30,13 @@ export async function executeTrade(sides, { checkOwners = false } = {}) {
     await give(b.actor, b.moves);
     // 3. Coins.
     for (const [self, other] of [[a, b], [b, a]]) {
-      const update = {};
-      for (const d of new Set([...Object.keys(self.coins), ...Object.keys(other.coins)])) {
-        const held = Number(self.actor.system.currency?.[d]) || 0;
-        const next = held - (self.coins[d] ?? 0) + (other.coins[d] ?? 0);
-        if (next !== held) update[`system.currency.${d}`] = next;
+      const held = sys.getCurrency(self.actor);
+      const next = {};
+      for (const key of new Set([...Object.keys(self.coins), ...Object.keys(other.coins)])) {
+        const value = (held[key] ?? 0) - (self.coins[key] ?? 0) + (other.coins[key] ?? 0);
+        if (value !== (held[key] ?? 0)) next[key] = value;
       }
-      if (!foundry.utils.isEmpty(update)) await self.actor.update(update);
+      if (!foundry.utils.isEmpty(next)) await self.actor.update(sys.currencyUpdate(self.actor, next));
     }
   } catch (err) {
     console.error(`${MODULE_ID} | Trade failed part-way`, err);
@@ -61,7 +63,11 @@ export async function executeTrade(sides, { checkOwners = false } = {}) {
 
 async function prepare(sides, { checkOwners }) {
   if (!Array.isArray(sides) || sides.length !== 2) return { error: game.i18n.localize("TRADEX.Error.Invalid") };
+  const sys = adapter();
+  const coinKeys = new Set(sys.currencies.map(c => c.key));
+  const coinLabel = key => sys.currencies.find(c => c.key === key)?.abbr ?? key;
   const out = [];
+
   for (const side of sides) {
     const actor = await fromUuid(side.actorUuid);
     if (!canTrade(actor)) return { error: game.i18n.localize("TRADEX.Error.ActorMissing") };
@@ -74,39 +80,36 @@ async function prepare(sides, { checkOwners }) {
     if (!actor.isOwner) return { error: game.i18n.format("TRADEX.Error.NotOwner", { actor: actor.name }) };
 
     // Items. A container takes its contents along, so drop contents offered separately.
-    const offered = Object.entries(side.offer?.items ?? {});
     const moves = [];
-    for (const [id, info] of offered) {
+    for (const [id, info] of Object.entries(side.offer?.items ?? {})) {
       const item = actor.items.get(id);
       const qty = Math.floor(Number(info?.qty) || 0);
       if (!isTradeable(item)) return { error: game.i18n.format("TRADEX.Error.ItemMissing", { item: info?.name ?? id, actor: actor.name }) };
-      const held = item.system.quantity ?? 1;
+      const held = sys.getQuantity(item);
       if (qty < 1 || qty > held) return { error: game.i18n.format("TRADEX.Error.NotEnoughItem", { item: item.name, actor: actor.name }) };
       moves.push({ item, qty, held });
     }
-    const containers = moves.filter(m => m.item.type === "container").map(m => m.item);
+    const containers = moves.filter(m => sys.isContainer(m.item)).map(m => m.item);
     const kept = moves.filter(m => !containers.some(c => isInside(m.item, c)));
     for (const m of kept) {
-      if (m.item.type === "container") {
-        m.contents = actor.items.filter(i => isInside(i, m.item)).length;
-      }
+      if (sys.isContainer(m.item)) m.contents = actor.items.filter(i => isInside(i, m.item)).length;
     }
 
     // Coins.
+    const held = sys.getCurrency(actor);
     const coins = {};
-    for (const [d, raw] of Object.entries(side.offer?.currency ?? {})) {
+    for (const [key, raw] of Object.entries(side.offer?.currency ?? {})) {
       const value = Math.floor(Number(raw) || 0);
       if (value <= 0) continue;
-      if (!(d in CONFIG.DND5E.currencies)) return { error: game.i18n.localize("TRADEX.Error.Invalid") };
-      if (value > (Number(actor.system.currency?.[d]) || 0)) {
-        return { error: game.i18n.format("TRADEX.Error.NotEnoughCoin", {
-          actor: actor.name, denom: game.i18n.localize(CONFIG.DND5E.currencies[d].abbreviation)
-        }) };
+      if (!coinKeys.has(key)) return { error: game.i18n.localize("TRADEX.Error.Invalid") };
+      if (value > (held[key] ?? 0)) {
+        return { error: game.i18n.format("TRADEX.Error.NotEnoughCoin", { actor: actor.name, denom: coinLabel(key) }) };
       }
-      coins[d] = value;
+      coins[key] = value;
     }
     out.push({ actor, moves: kept, coins });
   }
+
   if (out[0].actor === out[1].actor) return { error: game.i18n.localize("TRADEX.Error.SameActor") };
   if (out.every(s => !s.moves.length && foundry.utils.isEmpty(s.coins))) {
     return { error: game.i18n.localize("TRADEX.Error.Empty") };
@@ -118,60 +121,25 @@ async function prepare(sides, { checkOwners }) {
 /*  Moving items                                */
 /* -------------------------------------------- */
 
-/** Clean item data for its new owner. */
-function freshData(source) {
-  const data = source instanceof foundry.abstract.Document ? source.toObject() : foundry.utils.deepClone(source);
-  delete data._id;
-  delete data.sort;
-  delete data.ownership;
-  if (data.system) {
-    if ("equipped" in data.system) data.system.equipped = false;
-    if ("attuned" in data.system) data.system.attuned = false;
-    data.system.container = null;
-  }
-  return data;
-}
-
-/** Same thing, so the received quantity can join an existing stack. */
-function findStack(actor, item, exclude) {
-  if (!STACKABLE_TYPES.includes(item.type)) return null;
-  const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId ?? null;
-  const spent = item.system.uses?.spent ?? 0;
-  return actor.items.find(i => !exclude.has(i.id)
-    && (i.type === item.type)
-    && (i.name === item.name)
-    && !i.system.container
-    && ((i._stats?.compendiumSource ?? i.flags?.core?.sourceId ?? null) === source)
-    && ((i.system.uses?.spent ?? 0) === spent)) ?? null;
-}
-
 async function receive(actor, moves, exclude) {
+  const sys = adapter();
   const create = [];
   const stack = new Map();
   for (const { item, qty } of moves) {
-    if (item.type === "container") {
-      const Item5e = CONFIG.Item.documentClass;
-      const data = await Item5e.createWithContents([item], {
-        transformAll: doc => {
-          const d = freshData(doc);
-          // createWithContents assigns a new _id and system.container itself.
-          return d;
-        }
-      });
-      create.push(...data);
+    if (sys.isContainer(item)) {
+      create.push(...await sys.copyWithContents(item));
       continue;
     }
-    const existing = findStack(actor, item, exclude);
+    const existing = sys.findStack(actor, item, exclude);
     if (existing) {
-      stack.set(existing.id, (stack.get(existing.id) ?? existing.system.quantity ?? 0) + qty);
+      stack.set(existing.id, (stack.get(existing.id) ?? sys.getQuantity(existing)) + qty);
       continue;
     }
-    const data = freshData(item);
-    data.system.quantity = qty;
-    create.push(data);
+    create.push(sys.setQuantity(sys.cleanReceived(item), qty));
   }
   if (stack.size) {
-    await actor.updateEmbeddedDocuments("Item", [...stack].map(([_id, q]) => ({ _id, "system.quantity": q })));
+    const updates = [...stack].map(([id, q]) => sys.quantityUpdate(actor.items.get(id), q));
+    await actor.updateEmbeddedDocuments("Item", updates);
   }
   if (create.length) {
     await actor.createEmbeddedDocuments("Item", create, { keepId: true });
@@ -179,14 +147,15 @@ async function receive(actor, moves, exclude) {
 }
 
 async function give(actor, moves) {
+  const sys = adapter();
   const remove = [];
   const update = [];
   for (const { item, qty, held } of moves) {
     if (qty >= held) remove.push(item.id);
-    else update.push({ _id: item.id, "system.quantity": held - qty });
+    else update.push(sys.quantityUpdate(item, held - qty));
   }
   if (update.length) await actor.updateEmbeddedDocuments("Item", update);
-  if (remove.length) await actor.deleteEmbeddedDocuments("Item", remove, { deleteContents: true });
+  if (remove.length) await actor.deleteEmbeddedDocuments("Item", remove, sys.deleteOptions);
 }
 
 /* -------------------------------------------- */
@@ -196,14 +165,15 @@ async function give(actor, moves) {
 async function postReceipt(sides, lines) {
   const mode = game.settings.get(MODULE_ID, "receipt");
   if (mode === "off") return;
-  const coinLabel = d => game.i18n.localize(CONFIG.DND5E.currencies[d]?.abbreviation ?? d);
+  const currencies = adapter().currencies;
+  const coin = key => currencies.find(c => c.key === key) ?? { abbr: key };
   const context = {
     sides: lines.map((l, i) => ({
       img: sides[i].actor.img,
       from: l.from,
       to: l.to,
       items: l.items,
-      coins: Object.entries(l.coins).map(([d, v]) => ({ value: v, label: coinLabel(d), icon: CONFIG.DND5E.currencies[d]?.icon })),
+      coins: Object.entries(l.coins).map(([key, value]) => ({ value, label: coin(key).abbr, icon: coin(key).icon })),
       empty: !l.items.length && foundry.utils.isEmpty(l.coins)
     }))
   };

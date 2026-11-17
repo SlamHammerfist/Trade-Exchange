@@ -93,6 +93,11 @@
   border: none;
   flex: none;
 }
+.trade-exchange .tx-coin-abbr {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: var(--font-size-12, 12px);
+}
 .trade-exchange .tx-coin-input {
   width: 3.5rem;
   height: 1.6rem;

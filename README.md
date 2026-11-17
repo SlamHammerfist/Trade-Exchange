@@ -1,6 +1,6 @@
 # Trade Exchange
 
-Trade items and coins between two actors in one shared window, for D&D 5e.
+Trade items and coins between two actors in one shared window, in any game system.
 
 - **Player to player:** each player sees their own inventory on the left and the other player's
   offer on the right, updating live. When both press **Accept Trade**, it goes through. Any change
@@ -19,9 +19,53 @@ https://github.com/SlamHammerfist/Trade-Exchange/releases/latest/download/module
 
 Then enable it in your world.
 
+## Game systems
+
+The trade window, invitations and the way trades are carried out are the same in every system.
+What counts as an item, where coins live and how containers work come from a **system adapter**.
+
+### D&D 5e
+
+Install **[Trade Exchange for D&D 5e](https://github.com/SlamHammerfist/Trade-Exchange-DnD5e)**
+alongside this module. It adds coins by denomination, physical items, containers with their
+contents, stacking of received consumables and loot, and a Trade button beside the coins on the
+inventory tab. Without it, a D&D 5e world falls back to the generic settings below and the GM is
+told to install it.
+
+### Any other system
+
+Systems without a companion module use a generic adapter, set up in the module settings:
+
+- *Item quantity field:* where an item keeps its quantity (default `system.quantity`). Only items
+  with a number there can be traded, which keeps spells, features and the like out.
+- *Currency fields:* each kind of coin as `name=path`, comma-separated, for example
+  `gp=system.currency.gp, sp=system.currency.sp`. Leave it empty to trade items only.
+
+There's no stacking or container support in the generic adapter, and the **Trade** entry is in the
+actor sheet's header menu.
+
+### Writing an adapter
+
+A companion module (or a world script) adds full support for a system. Extend the generic adapter
+and override what your system does differently; see `scripts/systems/generic.mjs` for every
+method, and [Trade Exchange for D&D 5e](https://github.com/SlamHammerfist/Trade-Exchange-DnD5e)
+for a complete example.
+
+```js
+Hooks.once("tradeExchange.ready", api => {
+  api.registerSystem("my-system", class extends api.GenericAdapter {
+    canTrade(actor) { return actor.type === "character"; }
+    get currencies() { return [{ key: "coins", label: "Coins", abbr: "c", rate: 1 }]; }
+    get valueUnit() { return "c"; }
+    getCurrency(actor) { return { coins: actor.system.wealth ?? 0 }; }
+    currencyUpdate(actor, values) { return { "system.wealth": values.coins }; }
+  });
+});
+```
+
 ## Starting a trade
 
-Click the **handshake** button beside the coins on an actor's inventory tab, then choose a partner:
+Click the **Trade** button on an actor's sheet, then choose a partner:
 
 - *Other players (online):* actors owned by another connected player. That player gets a trade
   request; the window opens for both of you when they accept.
@@ -35,16 +79,7 @@ api.open(actor);              // pick a partner
 api.trade(actor, otherActor); // trade with a specific actor
 ```
 
-## What can be traded
-
-- Any physical item (weapons, equipment, consumables, tools, containers, loot), in any quantity
-  up to what the actor holds. Use −/+ or type a number; **Shift-click** + or − for all or none.
-- **Containers go with everything inside them.** Their contents are shown indented under them.
-- Coins, by denomination, up to what the actor holds. No change-making: you offer the coins you
-  actually have.
-
-Received items are unequipped and unattuned. Consumables and loot join an existing stack of the
-same thing (same name, same source, same uses spent) instead of making a duplicate.
+Use −/+ or type a number to set quantities; **Shift-click** + or − for all or none.
 
 ## How it's carried out
 
@@ -58,10 +93,10 @@ same thing (same name, same source, same uses spent) instead of making a duplica
 
 ## Settings
 
-- *Hide electrum* (world): leave ep out of trades.
 - *Trade receipt in chat* (world): Everyone / Traders and GM only / Don't post.
 - *Trade button on actor sheets* (per user).
+- Other systems: *Item quantity field* and *Currency fields* (world), described above.
 
 ## Requirements
 
-Foundry VTT v13–v14, dnd5e 5.0+ (tested against dnd5e 6.1.1). No other modules needed.
+Foundry VTT v13–v14. For D&D 5e, also [Trade Exchange for D&D 5e](https://github.com/SlamHammerfist/Trade-Exchange-DnD5e) (tested with dnd5e 6.1.1).
