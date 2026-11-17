@@ -1,0 +1,339 @@
+/* ---------------------------------------------------------------------- */
+/*  Trade window                                                           */
+/* ---------------------------------------------------------------------- */
+
+.trade-exchange.tx-window .window-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.trade-exchange [data-application-part="left"],
+.trade-exchange [data-application-part="right"] {
+  min-height: 0;
+  display: flex;
+}
+.trade-exchange [data-application-part="footer"] {
+  grid-column: 1 / -1;
+}
+
+.trade-exchange .tx-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-light-tertiary, #8884);
+  border-radius: 6px;
+}
+.trade-exchange .tx-side.readonly {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Header */
+.trade-exchange .tx-side-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.trade-exchange .tx-side-header img {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: top;
+}
+.trade-exchange .tx-side-title {
+  flex: 1;
+  min-width: 0;
+}
+.trade-exchange .tx-side-title h3 {
+  margin: 0;
+  border: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trade-exchange .tx-side-user,
+.trade-exchange .tx-side-role {
+  font-size: var(--font-size-12, 12px);
+  opacity: 0.75;
+}
+.trade-exchange .tx-side-role {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Coins */
+.trade-exchange .tx-coins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding: 0.35rem 0;
+  border-block: 1px dashed var(--color-border-light-tertiary, #8884);
+}
+.trade-exchange .tx-coin {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  opacity: 0.7;
+}
+.trade-exchange .tx-coin.offered,
+.trade-exchange .tx-side.editable .tx-coin {
+  opacity: 1;
+}
+.trade-exchange .tx-coin-icon {
+  width: 18px;
+  height: 18px;
+  border: none;
+  flex: none;
+}
+.trade-exchange .tx-coin-input {
+  width: 3.5rem;
+  height: 1.6rem;
+  text-align: right;
+}
+.trade-exchange .tx-coin.offered .tx-coin-value,
+.trade-exchange .tx-coin.offered .tx-coin-input {
+  font-weight: bold;
+}
+.trade-exchange .tx-held {
+  font-size: var(--font-size-11, 11px);
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+/* Filter */
+.trade-exchange .tx-filter {
+  width: 100%;
+  height: 1.75rem;
+  flex: none;
+}
+
+/* Item list */
+.trade-exchange .tx-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.trade-exchange .tx-group + .tx-group {
+  margin-top: 0.4rem;
+}
+.trade-exchange .tx-group-label {
+  margin: 0 0 0.15rem;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #8884);
+  font-size: var(--font-size-13, 13px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+.trade-exchange .tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.trade-exchange .tx-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.25rem;
+  padding-left: calc(0.25rem + var(--tx-depth, 0) * 1.1rem);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+}
+.trade-exchange .tx-item.offered {
+  background: rgba(60, 140, 60, 0.14);
+  border-left-color: rgb(60, 140, 60);
+}
+.trade-exchange .tx-item.locked {
+  opacity: 0.6;
+}
+.trade-exchange .tx-item > img {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.trade-exchange .tx-item-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.trade-exchange .tx-item-name > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trade-exchange .tx-item-name small {
+  font-size: var(--font-size-11, 11px);
+  opacity: 0.7;
+}
+.trade-exchange .tx-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: none;
+}
+.trade-exchange .tx-qty button {
+  width: 1.4rem;
+  height: 1.4rem;
+  line-height: 1;
+  font-size: var(--font-size-11, 11px);
+}
+.trade-exchange .tx-qty-input {
+  width: 2.75rem;
+  height: 1.5rem;
+  text-align: center;
+}
+.trade-exchange .tx-qty .tx-held {
+  min-width: 2.2rem;
+}
+.trade-exchange .tx-qty-value {
+  font-weight: bold;
+  flex: none;
+}
+.trade-exchange .tx-empty {
+  text-align: center;
+  opacity: 0.6;
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+/* Hide number spinners; we have −/+ buttons */
+.trade-exchange input[type="number"]::-webkit-inner-spin-button,
+.trade-exchange input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.trade-exchange input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.trade-exchange .tx-side-total {
+  flex: none;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--color-border-light-tertiary, #8884);
+  font-size: var(--font-size-12, 12px);
+  text-align: right;
+  opacity: 0.85;
+}
+
+/* Footer */
+.trade-exchange .tx-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.trade-exchange .tx-footer-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.trade-exchange .tx-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.trade-exchange .tx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-border-light-tertiary, #8884);
+  font-size: var(--font-size-14, 14px);
+  font-weight: bold;
+}
+.trade-exchange .tx-badge i {
+  font-size: var(--font-size-16, 16px);
+}
+.trade-exchange .tx-badge.accepted {
+  border-color: rgb(60, 140, 60);
+  background: rgba(60, 140, 60, 0.2);
+}
+.trade-exchange .tx-badge.accepted i {
+  color: rgb(90, 180, 90);
+}
+.trade-exchange .tx-note {
+  margin: 0;
+  font-size: var(--font-size-12, 12px);
+}
+.trade-exchange .tx-error {
+  color: var(--color-level-error, #c33);
+}
+.trade-exchange .tx-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex: none;
+}
+.trade-exchange .tx-buttons button {
+  width: auto;
+  white-space: nowrap;
+  padding: 0 0.75rem;
+}
+.trade-exchange .tx-buttons .tx-primary:not(:disabled) {
+  font-weight: bold;
+}
+
+/* Invitation / partner dialogs */
+.tx-dialog select {
+  flex: 1;
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Chat receipt                                                           */
+/* ---------------------------------------------------------------------- */
+
+.trade-exchange-receipt h3 {
+  margin: 0 0 0.3rem;
+  font-size: var(--font-size-16, 16px);
+}
+.trade-exchange-receipt .tx-receipt-side + .tx-receipt-side {
+  margin-top: 0.4rem;
+}
+.trade-exchange-receipt header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.trade-exchange-receipt header img {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+}
+.trade-exchange-receipt ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.4rem;
+}
+.trade-exchange-receipt .tx-receipt-coins {
+  list-style: none;
+  margin-left: -1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.trade-exchange-receipt .tx-receipt-coins img {
+  width: 14px;
+  height: 14px;
+  border: none;
+  vertical-align: middle;
+}
+.trade-exchange-receipt .tx-receipt-none {
+  margin: 0.1rem 0 0 1.4rem;
+  opacity: 0.6;
+  font-style: italic;
+}

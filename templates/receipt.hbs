@@ -1,0 +1,16 @@
+<div class="trade-exchange-receipt">
+  <h3><i class="fa-solid fa-handshake" inert></i> {{localize "TRADEX.Receipt.Title"}}</h3>
+  {{#each sides}}
+  <section class="tx-receipt-side">
+    <header><img src="{{img}}" alt=""> <strong>{{from}}</strong> <i class="fa-solid fa-arrow-right" inert></i> <strong>{{to}}</strong></header>
+    {{#if empty}}
+    <p class="tx-receipt-none">{{localize "TRADEX.Receipt.Nothing"}}</p>
+    {{else}}
+    <ul>
+      {{#each items}}<li>{{qty}}&times; {{name}}{{#if contents}} <em>({{localize "TRADEX.Receipt.WithContents" n=contents}})</em>{{/if}}</li>{{/each}}
+      {{#if coins.length}}<li class="tx-receipt-coins">{{#each coins}}<span><img src="{{icon}}" alt=""> {{value}} {{label}}</span>{{/each}}</li>{{/if}}
+    </ul>
+    {{/if}}
+  </section>
+  {{/each}}
+</div>

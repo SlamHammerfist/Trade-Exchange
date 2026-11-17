@@ -1,0 +1,87 @@
+{
+  "TRADEX": {
+    "Title": "Trade: {a} ⇄ {b}",
+    "SheetButton": "Trade",
+    "YourOffer": "Offering",
+    "TheirOffer": "Their offer",
+    "Filter": "Filter items…",
+    "Less": "Less (Shift: none)",
+    "More": "More (Shift: all)",
+    "NoItems": "No items to trade.",
+    "NothingOffered": "Nothing offered yet.",
+    "WithContainer": "Goes with {container}",
+    "Contains": "Contains {n} item(s)",
+    "Summary": "{count} item(s) · ≈ {value} gp · {weight} {unit}",
+    "UnknownActor": "Unknown",
+    "Cancel": "Cancel",
+    "Accept": "Accept Trade",
+    "Withdraw": "Withdraw Acceptance",
+    "CompleteTrade": "Complete Trade",
+    "Complete": "Trade complete.",
+    "Cancelled": "{user} cancelled the trade.",
+    "Disconnected": "{user} disconnected. The trade was cancelled.",
+    "Status": {
+      "Accepted": "Accepted",
+      "Reviewing": "Reviewing",
+      "Completing": "Completing the trade…"
+    },
+    "Pick": {
+      "Title": "Start a Trade",
+      "Prompt": "Who should {name} trade with?",
+      "Partner": "Trade with",
+      "Players": "Other players (online)",
+      "Mine": "Your own actors",
+      "Start": "Start Trade"
+    },
+    "Invite": {
+      "Title": "Trade Request",
+      "Body": "{user} wants to trade: {theirs} with your {ours}.",
+      "Accept": "Open Trade",
+      "Decline": "Decline",
+      "Sent": "Trade request sent to {user} for {name}.",
+      "Declined": "{user} declined the trade.",
+      "NoAnswer": "{user} didn't answer the trade request.",
+      "Withdrawn": "{user} withdrew the trade request."
+    },
+    "Receipt": {
+      "Speaker": "Trade Exchange",
+      "Title": "Trade Completed",
+      "Nothing": "nothing",
+      "WithContents": "with {n} item(s) inside"
+    },
+    "Error": {
+      "NoGM": "A GM must be online to complete a trade between players.",
+      "GMTimeout": "The GM's client didn't respond. Try accepting again.",
+      "Mismatch": "The two offers didn't match when the trade was confirmed. Please review and accept again.",
+      "Invalid": "The trade data was invalid.",
+      "ActorMissing": "One of the trading actors no longer exists.",
+      "SameActor": "An actor can't trade with itself.",
+      "NotOwner": "The trader doesn't own {actor}.",
+      "ItemMissing": "{actor} no longer has {item}.",
+      "NotEnoughItem": "{actor} doesn't have that many of {item}.",
+      "NotEnoughCoin": "{actor} doesn't have enough {denom}.",
+      "Empty": "Neither side is offering anything.",
+      "Execution": "The trade stopped part-way: {message}",
+      "CannotTrade": "This actor can't trade.",
+      "NoPartners": "No one to trade with: no other actors you own and no other players online.",
+      "PartnerOffline": "No player who controls {name} is online."
+    },
+    "Settings": {
+      "HideElectrum": {
+        "Name": "Hide electrum",
+        "Hint": "Leave electrum (ep) out of trades."
+      },
+      "Receipt": {
+        "Name": "Trade receipt in chat",
+        "Hint": "Post a summary of each completed trade.",
+        "Public": "Everyone",
+        "Private": "Traders and GM only",
+        "Off": "Don't post"
+      },
+      "SheetButton": {
+        "Name": "Trade button on actor sheets",
+        "Hint": "Show a handshake button beside the coins on the inventory tab."
+      }
+    }
+  }
+}

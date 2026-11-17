@@ -1,0 +1,67 @@
+{{#with side}}
+<section class="tx-side {{#if editable}}editable{{else}}readonly{{/if}}" data-side="{{index}}">
+  <header class="tx-side-header">
+    <img src="{{img}}" alt="">
+    <div class="tx-side-title">
+      <h3>{{name}}</h3>
+      {{#if userName}}<span class="tx-side-user">{{userName}}</span>{{/if}}
+    </div>
+    <span class="tx-side-role">{{#if editable}}{{localize "TRADEX.YourOffer"}}{{else}}{{localize "TRADEX.TheirOffer"}}{{/if}}</span>
+  </header>
+
+  <div class="tx-coins">
+    {{#each coins}}
+    <label class="tx-coin {{#if offered}}offered{{/if}}" data-tooltip="{{label}}">
+      <img class="tx-coin-icon" src="{{icon}}" alt="{{label}}">
+      {{#if ../editable}}
+      <input type="number" class="tx-coin-input" data-denom="{{key}}" min="0" max="{{held}}" step="1" value="{{offered}}">
+      <span class="tx-held">/ {{held}}</span>
+      {{else}}
+      <span class="tx-coin-value">{{offered}}</span>
+      {{/if}}
+    </label>
+    {{/each}}
+  </div>
+
+  {{#if editable}}
+  <input type="search" class="tx-filter" placeholder="{{localize "TRADEX.Filter"}}" value="{{filter}}" autocomplete="off">
+  {{/if}}
+
+  <div class="tx-items">
+    {{#if hasItems}}
+    {{#each groups}}
+    <section class="tx-group">
+      <h4 class="tx-group-label">{{label}}</h4>
+      <ol class="tx-list">
+        {{#each items}}
+        <li class="tx-item {{#if offered}}offered{{/if}} {{#if locked}}locked{{/if}}" data-item-id="{{id}}" data-search="{{search}}" style="--tx-depth: {{depth}}">
+          <img src="{{img}}" alt="" data-action="openItem">
+          <div class="tx-item-name">
+            <span>{{name}}</span>
+            {{#if note}}<small>{{note}}</small>{{/if}}
+          </div>
+          {{#if ../../editable}}
+          {{#unless locked}}
+          <div class="tx-qty">
+            <button type="button" class="unbutton" data-action="step" data-delta="-1" data-tooltip="TRADEX.Less"><i class="fa-solid fa-minus" inert></i></button>
+            <input type="number" class="tx-qty-input" min="0" max="{{held}}" step="1" value="{{qty}}">
+            <button type="button" class="unbutton" data-action="step" data-delta="1" data-tooltip="TRADEX.More"><i class="fa-solid fa-plus" inert></i></button>
+            <span class="tx-held">/ {{held}}</span>
+          </div>
+          {{/unless}}
+          {{else}}
+          <span class="tx-qty-value">&times;{{qty}}</span>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </section>
+    {{/each}}
+    {{else}}
+    <p class="tx-empty">{{#if editable}}{{localize "TRADEX.NoItems"}}{{else}}{{localize "TRADEX.NothingOffered"}}{{/if}}</p>
+    {{/if}}
+  </div>
+
+  <footer class="tx-side-total">{{total}}</footer>
+</section>
+{{/with}}

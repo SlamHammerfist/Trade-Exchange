@@ -1,0 +1,36 @@
+{{#with footer}}
+<footer class="tx-footer">
+  <div class="tx-footer-info">
+    {{#if statuses.length}}
+    <div class="tx-statuses">
+      {{#each statuses}}
+      <span class="tx-badge {{#if accepted}}accepted{{/if}}">
+        <i class="fa-solid {{#if accepted}}fa-circle-check{{else}}fa-hourglass-half{{/if}}" inert></i>
+        {{name}}: {{label}}
+      </span>
+      {{/each}}
+    </div>
+    {{/if}}
+    {{#if committing}}<p class="tx-note"><i class="fa-solid fa-spinner fa-spin" inert></i> {{localize "TRADEX.Status.Completing"}}</p>
+    {{else if error}}<p class="tx-note tx-error"><i class="fa-solid fa-triangle-exclamation" inert></i> {{error}}</p>
+    {{else if noGM}}<p class="tx-note tx-error"><i class="fa-solid fa-triangle-exclamation" inert></i> {{localize "TRADEX.Error.NoGM"}}</p>
+    {{/if}}
+  </div>
+  <div class="tx-buttons">
+    <button type="button" data-action="cancel"><i class="fa-solid fa-xmark" inert></i> {{localize "TRADEX.Cancel"}}</button>
+    {{#if local}}
+    <button type="button" class="tx-primary" data-action="complete" {{#unless canComplete}}disabled{{/unless}}>
+      <i class="fa-solid fa-handshake" inert></i> {{localize "TRADEX.CompleteTrade"}}
+    </button>
+    {{else if myAccepted}}
+    <button type="button" data-action="accept" data-side="{{myIndex}}" data-value="0" {{#unless canAct}}disabled{{/unless}}>
+      <i class="fa-solid fa-rotate-left" inert></i> {{localize "TRADEX.Withdraw"}}
+    </button>
+    {{else}}
+    <button type="button" class="tx-primary" data-action="accept" data-side="{{myIndex}}" data-value="1" {{#unless canAccept}}disabled{{/unless}}>
+      <i class="fa-solid fa-check" inert></i> {{localize "TRADEX.Accept"}}
+    </button>
+    {{/if}}
+  </div>
+</footer>
+{{/with}}

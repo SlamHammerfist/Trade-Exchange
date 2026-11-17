@@ -1,0 +1,42 @@
+{
+  "id": "trade-exchange",
+  "title": "Trade Exchange",
+  "description": "Trade items and coins between two actors in one shared window. Works player-to-player (both sides accept, the GM's client carries it out) or between two actors you own yourself.",
+  "version": "2.0.0",
+  "authors": [
+    { "name": "Slam Hammerfist" }
+  ],
+  "url": "https://github.com/SlamHammerfist/Trade-Exchange",
+  "manifest": "https://github.com/SlamHammerfist/Trade-Exchange/releases/latest/download/module.json",
+  "download": "https://github.com/SlamHammerfist/Trade-Exchange/releases/download/v2.0.0/module.zip",
+  "bugs": "https://github.com/SlamHammerfist/Trade-Exchange/issues",
+  "readme": "https://github.com/SlamHammerfist/Trade-Exchange/blob/main/README.md",
+  "changelog": "https://github.com/SlamHammerfist/Trade-Exchange/blob/main/CHANGELOG.md",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": { "minimum": "5.0.0", "verified": "6.1.1" }
+      }
+    ]
+  },
+  "socket": true,
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/trade-exchange.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ]
+}
